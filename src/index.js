@@ -7,6 +7,7 @@ const tableBody = document.querySelector('#table-body')
 const inputName = document.querySelector('#inputName')
 const inputBreed = document.querySelector('#inputBreed')
 const inputSex = document.querySelector('#inputSex')
+const form = document.querySelector('form')
 
 
 const state = {
@@ -25,15 +26,16 @@ function renderSingleDog(dog) {
     <td class="padding">${dog.name}</td>
     <td class="padding">${dog.breed}</td>
     <td class="padding">${dog.sex}</td>
-    <td class="padding center edit-btn"><button>Edit Dog</button></td>
+    <td class="padding center"><button class="edit-btn" data-id="${dog.id}">Edit Dog</button><button class="delete-btn" data-id="${dog.id}">Delete</button></td>
   `;
   tableBody.appendChild(tableRow);
 }
 
 // render multiple Dogs
 
-function renderMultipleDogs(dogs) {
-  dogs.forEach(dog => renderSingleDog(dog))
+function renderMultipleDogs() {
+  tableBody.innerHTML = '';
+  state.dogs.forEach(dog => renderSingleDog(dog))
 }
 
 // event listener for edit button
@@ -46,17 +48,50 @@ function renderMultipleDogs(dogs) {
       // inputName.placeholder = dog.name
       // inputBreed.placeholder = dog.breed
       // inputSex.placeholder = dog.sex
-      updateDog(foundDog)
+
+        inputName.value = foundDog.name
+        inputBreed.value = foundDog.breed
+        inputSex.value = foundDog.sex
+        state.selectedDog = foundDog
+        // debugger
     }
+
   })
 // }
+  form.addEventListener('submit', event => {
+    state.selectedDog.name = inputName.value
+    state.selectedDog.breed = inputBreed.value
+    state.selectedDog.sex = inputSex.value
+
+    event.preventDefault();
+
+    updateDog()
+      .then(initialize);
+  })
+
+  document.addEventListener('click', event => {
+    if(event.target.className === 'delete-btn') {
+      const id = event.target.dataset.id
+      const foundDog = state.dogs.find(dog => dog.id == id)
+      state.selectedDog = foundDog
+      deleteDog()
+        .then(initialize)
+    }
+
+  })
+
+// function updateDogTable() {
+//   table.innerHTML = '';
+// }
+
+
 
 // initializer
 function initialize() {
   getDogs()
     .then(dogs => {
       state.dogs = dogs
-      renderMultipleDogs(state.dogs)
+      renderMultipleDogs()
     })
 
 }
@@ -70,6 +105,7 @@ function getDogs() {
 
 function updateDog() {
   const dog = state.selectedDog
+
   return fetch(`http://localhost:3000/dogs/${dog.id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -77,5 +113,11 @@ function updateDog() {
   }).then(resp => resp.json())
 }
 
+function deleteDog() {
+  const dog = state.selectedDog
+  return fetch(`http://localhost:3000/dogs/${dog.id}`, {
+    method: 'DELETE'
+  })
+}
 
 initialize()
